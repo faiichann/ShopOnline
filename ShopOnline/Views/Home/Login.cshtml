@@ -1,0 +1,29 @@
+﻿@model ShopOnline.Models.db.User
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<h1>Login</h1>
+
+<div class="row justify-content-md-center">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                Login
+            </div>
+            <div class="card-body">
+                <form asp-controller="Home" asp-action="Login" method="post">
+                    <span>UserName :</span><input type="text" name="username" /><br />
+                    <span>Password : </span><input type="password" name="password" /><br />
+                    <input class="btn-sec4" name="Login" type="submit" value="Login" /><br />
+                </form>
+                <a asp-action="Register"> Register</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
