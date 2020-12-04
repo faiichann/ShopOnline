@@ -10,16 +10,25 @@ using ShopOnline.Models.db;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.IO;
+using System.Data;
+using System.Data.SqlClient;
+using System.Configuration;
+using System.Web;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ShopOnline.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, IWebHostEnvironment webHostEnvironment)
         {
             _logger = logger;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         SemicolonContext db = new SemicolonContext();
@@ -87,6 +96,7 @@ namespace ShopOnline.Controllers
             return View(await db.Users.ToListAsync());
         }
 
+        [HttpGet]
         public IActionResult Register()
         {
             return View();
@@ -106,6 +116,15 @@ namespace ShopOnline.Controllers
             }
 
             return View(user);
+        }
+        [Authorize]
+        public async Task<ViewResult> Register(bool isSuccess = false, int userId = 0)
+        {
+            var model = new User();
+
+            ViewBag.IsSuccess = isSuccess;
+            ViewBag.BookId = userId;
+            return View(model);
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -148,12 +167,39 @@ namespace ShopOnline.Controllers
                 //    user.UserImage = Path.GetFileName(image.FileName),
                 //    user.Data = bytes
                 //});
+                //if (file != null && file.Length > 0)
+                //{
+                //    string filename = Path.GetFileName(file.FileName);
+                //    string Imgpath = Path.Combine(Server.MapPath("~/images/"), filename);
+                //    file.SaveAs(Imgpath);
+                //}
+                if (user.UserImage != null)
+                {
+                    string folder = "Img/profile/";
+                    user.UserPathimg = await UploadImage(folder, user.UserImage);
+                }
+
                 db.Add(user);
                 await db.SaveChangesAsync();
+                if (user.UserId > 0)
+                {
+                    return RedirectToAction(nameof(Register), new { isSuccess = true, userId = user.UserId });
+                }
                 return RedirectToAction(nameof(Index));
 
             }
             return View(user);
+        }
+        private async Task<string> UploadImage(string folderPath, IFormFile file)
+        {
+
+            folderPath += Guid.NewGuid().ToString() + "_" + file.FileName;
+
+            string serverFolder = Path.Combine(_webHostEnvironment.WebRootPath, folderPath);
+
+            await file.CopyToAsync(new FileStream(serverFolder, FileMode.Create));
+
+            return "/" + folderPath;
         }
         public async Task<IActionResult> Edit(int? id)
         {
